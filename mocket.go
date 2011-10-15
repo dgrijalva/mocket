@@ -4,14 +4,15 @@ import "net"
 import "bytes"
 import "io"
 import "os"
+import "sync"
 
 type Mocket struct {
-	server, client *bytes.Buffer
+	server, client *buffer
 	closed bool
 }
 
 func New()*Mocket {
-	m := &Mocket{server: &bytes.Buffer{}, client: &bytes.Buffer{}}
+	m := &Mocket{server: newBuffer(&bytes.Buffer{}), client: newBuffer(&bytes.Buffer{})}
 	return m
 }
 
@@ -25,6 +26,35 @@ func (m *Mocket) Client()net.Conn {
 
 func (m *Mocket) Close() {
 	
+}
+
+type buffer struct {
+	buf *bytes.Buffer
+	cond *sync.Cond
+}
+
+func newBuffer(buf *bytes.Buffer)*buffer {
+	return &buffer{
+		buf: buf,
+		cond: sync.NewCond(new(sync.Mutex)),
+	}
+}
+
+func (b *buffer) Read(d []byte)(int, os.Error) {
+	b.cond.L.Lock()
+	defer b.cond.L.Unlock()
+	for b.buf.Len() < 1 {
+	    b.cond.Wait()
+	}
+	return b.buf.Read(d)
+}
+
+func (b *buffer) Write(d []byte)(int, os.Error) {
+	b.cond.L.Lock()
+	defer b.cond.L.Unlock()
+	i, e := b.buf.Write(d)
+	b.cond.Signal()
+	return i, e
 }
 
 type side struct {

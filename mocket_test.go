@@ -4,6 +4,8 @@ import (
 	"testing"
 	"net"
 	"bytes"
+	"sync"
+	"time"
 )
 
 func TestSetup(t *testing.T) {
@@ -34,4 +36,25 @@ func TestBasicRW(t *testing.T) {
 	if !bytes.Equal(data, r) {
 		t.Errorf("expected %v was %v", data, r)
 	}
+}
+
+func TestEmptyBuffers(t *testing.T) {
+	m := New()
+	c, s := m.Client(), m.Server()
+	wg := new(sync.WaitGroup)
+
+	wg.Add(1)
+	go func(){
+		data := make([]byte, 10)
+		if _, err := c.Read(data); err != nil {
+			t.Errorf("Should block instead of receiving EOF when buffer is empty: %v", err)
+		}
+	}()
+	go func() {
+		time.Sleep(1e7)
+		s.Write([]byte("a"))
+		wg.Done()
+	}()
+	
+	wg.Wait()
 }
