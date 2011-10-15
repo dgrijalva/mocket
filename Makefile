@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=mocket
+TARG=github.com/dgrijalva/mocket
 GOFILES= \
     mocket.go
 

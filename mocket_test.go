@@ -48,6 +48,9 @@ func TestEmptyBuffers(t *testing.T) {
 		data := make([]byte, 10)
 		if _, err := c.Read(data); err != nil {
 			t.Errorf("Should block instead of receiving EOF when buffer is empty: %v", err)
+			if data[0] != 'a' {
+				t.Errorf("Data is missing. %v", data)
+			}
 		}
 	}()
 	go func() {
